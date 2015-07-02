@@ -4,6 +4,7 @@ namespace Splitice;
 
 class ResourceFactory {
     private $db = array();
+    private $registration = array();
 
     /**
      * @var ResourceFactory|null
@@ -26,7 +27,7 @@ class ResourceFactory {
      */
     function register($name, $creation){
         $db = &$this->db;
-        $this->db[$name] = function() use($name,$creation,&$db){
+        $this->registration[$name] = $this->db[$name] = function() use($name,$creation,&$db){
             $r = $creation();
             $db[$name] = function() use($r) { return $r; };
             return $r;
@@ -45,5 +46,14 @@ class ResourceFactory {
         }
         $r = $this->db[$name];
         return $r();
+    }
+
+    /**
+     * Clear a resource, i.e so that we can re-connect
+     *
+     * @param $name
+     */
+    function clear($name){
+        $this->db[$name] = $this->registration[$name];
     }
 }
