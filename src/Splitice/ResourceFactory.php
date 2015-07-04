@@ -25,11 +25,24 @@ class ResourceFactory {
      * @param string $name
      * @param callable $creation
      */
-    function register($name, $creation){
+    function register($name, $creation, $validation = null){
         $db = &$this->db;
-        $this->registration[$name] = $this->db[$name] = function() use($name,$creation,&$db){
+        $registration = &$this->registration;
+
+        if(!$validation){
+            $validation = function(){ return true; };
+        }
+
+        $this->registration[$name] = $this->db[$name] = function($validate = true) use($name,$creation,$validation,&$db,&$registration){
             $r = $creation();
-            $db[$name] = function() use($r) { return $r; };
+            $db[$name] = function() use($r, $name, $validation, &$registration, $validate) {
+                if(!$validate || $validation($r)) {
+                    return $r;
+                }
+                $r = $registration[$name];
+                $r = $r(false);
+                return $r;
+            };
             return $r;
         };
     }
